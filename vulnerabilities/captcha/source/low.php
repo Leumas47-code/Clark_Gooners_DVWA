@@ -1,40 +1,32 @@
 <?php
 
 if( isset( $_POST[ 'Change' ] ) ) {
-    // Get input
-    $pass_new  = $_POST[ 'password_new' ];
-    $pass_conf = $_POST[ 'password_conf' ];
+    // SECURE FIX: Enforce reCAPTCHA validation server-side
+    $resp = recaptcha_check_answer(
+        $_DVWA[ 'recaptcha_private_key' ],
+        $_SERVER[ 'REMOTE_ADDR' ],
+        $_POST[ 'recaptcha_challenge_field' ],
+        $_POST[ 'recaptcha_response_field' ]
+    );
 
-    // SECURE FIX: Verify CAPTCHA server-side response token
-    $resp = null;
+    if( $resp->is_valid ) {
+        // Validate and update password only if CAPTCHA check succeeded
+        $pass_new = $_POST[ 'password_new' ];
+        $pass_conf = $_POST[ 'password_conf' ];
 
-    if( isset( $_POST[ 'g-recaptcha-response' ] ) ) {
-        // Verify token with reCAPTCHA API or internal handler
-        $resp = recaptcha_check_answer(
-            $_DVWA[ 'recaptcha_private_key' ],
-            $_SERVER[ 'REMOTE_ADDR' ],
-            $_POST[ 'g-recaptcha-response' ]
-        );
-    }
+        if( $pass_new === $pass_conf ) {
+            $pass_new = ((is_null($GLOBALS["___mysqli_ston"])) ? mysqli_real_escape_string($GLOBALS["___mysqli_ston"], $pass_new ) : ((&$___mysqli_ston) ? mysqli_real_escape_string($___mysqli_ston, $pass_new ) : false));
+            $pass_new = md5( $pass_new );
 
-    // Check if CAPTCHA response is valid
-    if( ( isset( $resp ) && $resp->is_valid ) || ( isset( $_POST[ 'recaptcha_challenge_field' ] ) && check_captcha() ) ) {
-        if( $pass_new == $pass_conf ) {
-            // Update password securely using prepared statements
-            $pass_hash = md5( $pass_new );
-            $user = $_SESSION['user'];
-
-            $query  = "UPDATE `users` SET password = ? WHERE user = ?;";
-            $stmt   = mysqli_prepare($GLOBALS["___mysqli_ston"], $query);
-            mysqli_stmt_bind_param($stmt, "ss", $pass_hash, $user);
-            mysqli_stmt_execute($stmt);
+            $query  = "UPDATE users SET password = '$pass_new' WHERE user = '" . dvwaCurrentUser() . "';";
+            $result = mysqli_query($GLOBALS["___mysqli_ston"],  $query );
 
             echo "<pre>Password changed.</pre>";
         } else {
             echo "<pre>Passwords did not match.</pre>";
         }
     } else {
-        echo "<pre>The CAPTCHA was not entered correctly. Please try again.</pre>";
+        echo "<pre>reCAPTCHA was incorrect.</pre>";
     }
 }
 
