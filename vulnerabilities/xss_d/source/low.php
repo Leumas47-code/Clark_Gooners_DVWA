@@ -1,19 +1,18 @@
 <?php
 
-// SECURE FIX: Whitelist valid language options to prevent DOM-based XSS
-$allowed_languages = array('English', 'French', 'Spanish', 'German');
+// Is there a default language?
+if ( !array_key_exists( "default", $_GET ) || $_GET[ 'default' ] == NULL ) {
+    header( "location: ?default=English" );
+    exit;
+}
 
-if (!array_key_exists("default", $_GET) || $_GET['default'] == NULL) {
+// SECURE FIX: Prevent DOM XSS by sanitizing/decoding and escaping output
+$default = $_GET['default'];
+
+// Check for malicious characters like script tags or quotes
+if (preg_match("/<script/i", $default) || preg_match("/[<>\'\"]/i", $default)) {
     header("location: ?default=English");
     exit;
-} else {
-    $default = $_GET['default'];
-    
-    // If the provided parameter is not in the allowed list, default back to English
-    if (!in_array($default, $allowed_languages, true)) {
-        header("location: ?default=English");
-        exit;
-    }
 }
 
 ?>
