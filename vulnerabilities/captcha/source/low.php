@@ -15,11 +15,15 @@ if( isset( $_POST[ 'Change' ] ) ) {
         $pass_conf = $_POST[ 'password_conf' ];
 
         if( $pass_new === $pass_conf ) {
-            $pass_new = ((is_null($GLOBALS["___mysqli_ston"])) ? mysqli_real_escape_string($GLOBALS["___mysqli_ston"], $pass_new ) : ((&$___mysqli_ston) ? mysqli_real_escape_string($___mysqli_ston, $pass_new ) : false));
-            $pass_new = md5( $pass_new );
+            // Use prepared statements to update password securely
+            $pass_hash = md5( $pass_new );
+            $user = dvwaCurrentUser();
 
-            $query  = "UPDATE users SET password = '$pass_new' WHERE user = '" . dvwaCurrentUser() . "';";
-            $result = mysqli_query($GLOBALS["___mysqli_ston"],  $query );
+            $query  = "UPDATE `users` SET password = ? WHERE user = ?;";
+            $stmt   = mysqli_prepare($GLOBALS["___mysqli_ston"], $query);
+            mysqli_stmt_bind_param($stmt, "ss", $pass_hash, $user);
+            mysqli_stmt_execute($stmt);
+            mysqli_stmt_close($stmt);
 
             echo "<pre>Password changed.</pre>";
         } else {
