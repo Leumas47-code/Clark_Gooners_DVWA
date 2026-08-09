@@ -4,12 +4,10 @@ if( isset( $_POST[ 'Change' ] ) ) {
     // SECURE FIX: Enforce reCAPTCHA validation server-side
     $resp = recaptcha_check_answer(
         $_DVWA[ 'recaptcha_private_key' ],
-        $_SERVER[ 'REMOTE_ADDR' ],
-        $_POST[ 'recaptcha_challenge_field' ],
-        $_POST[ 'recaptcha_response_field' ]
+        $_POST[ 'g-recaptcha-response' ]
     );
 
-    if( $resp->is_valid ) {
+    if( $resp ) {
         // Validate and update password only if CAPTCHA check succeeded
         $pass_new = $_POST[ 'password_new' ];
         $pass_conf = $_POST[ 'password_conf' ];
